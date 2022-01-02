@@ -536,10 +536,10 @@ function Janus(gatewayCallbacks) {
 
 	var connected = false;
 	var sessionId = null;
-	var pluginHandles = {};
+	var pluginHandles = new Map();
 	var that = this;
 	var retries = 0;
-	var transactions = {};
+	var transactions = new Map();
 	createSession(gatewayCallbacks);
 
 	// Public methods
@@ -613,10 +613,10 @@ function Janus(gatewayCallbacks) {
 			Janus.debug(json);
 			const transaction = json["transaction"];
 			if(transaction) {
-				const reportSuccess = transactions[transaction];
+				const reportSuccess = transactions.get(transaction);
 				if(reportSuccess)
 					reportSuccess(json);
-				delete transactions[transaction];
+				transactions.delete(transaction);
 			}
 			return;
 		} else if(json["janus"] === "ack") {
@@ -625,10 +625,10 @@ function Janus(gatewayCallbacks) {
 			Janus.debug(json);
 			const transaction = json["transaction"];
 			if(transaction) {
-				const reportSuccess = transactions[transaction];
+				const reportSuccess = transactions.get(transaction);
 				if(reportSuccess)
 					reportSuccess(json);
-				delete transactions[transaction];
+				transactions.delete(transaction);
 			}
 			return;
 		} else if(json["janus"] === "success") {
@@ -637,10 +637,10 @@ function Janus(gatewayCallbacks) {
 			Janus.debug(json);
 			const transaction = json["transaction"];
 			if(transaction) {
-				const reportSuccess = transactions[transaction];
+				const reportSuccess = transactions.get(transaction);
 				if(reportSuccess)
 					reportSuccess(json);
-				delete transactions[transaction];
+				transactions.delete(transaction);
 			}
 			return;
 		} else if(json["janus"] === "trickle") {
@@ -650,7 +650,7 @@ function Janus(gatewayCallbacks) {
 				Janus.warn("Missing sender...");
 				return;
 			}
-			const pluginHandle = pluginHandles[sender];
+			const pluginHandle = pluginHandles.get(sender);
 			if(!pluginHandle) {
 				Janus.debug("This handle is not attached to this session");
 				return;
@@ -686,7 +686,7 @@ function Janus(gatewayCallbacks) {
 				Janus.warn("Missing sender...");
 				return;
 			}
-			const pluginHandle = pluginHandles[sender];
+			const pluginHandle = pluginHandles.get(sender);
 			if(!pluginHandle) {
 				Janus.debug("This handle is not attached to this session");
 				return;
@@ -702,7 +702,7 @@ function Janus(gatewayCallbacks) {
 				Janus.warn("Missing sender...");
 				return;
 			}
-			const pluginHandle = pluginHandles[sender];
+			const pluginHandle = pluginHandles.get(sender);
 			if(!pluginHandle) {
 				Janus.debug("This handle is not attached to this session");
 				return;
@@ -718,7 +718,7 @@ function Janus(gatewayCallbacks) {
 				Janus.warn("Missing sender...");
 				return;
 			}
-			const pluginHandle = pluginHandles[sender];
+			const pluginHandle = pluginHandles.get(sender);
 			if(!pluginHandle) {
 				// Don't warn here because destroyHandle causes this situation.
 				return;
@@ -734,7 +734,7 @@ function Janus(gatewayCallbacks) {
 				Janus.warn("Missing sender...");
 				return;
 			}
-			const pluginHandle = pluginHandles[sender];
+			const pluginHandle = pluginHandles.get(sender);
 			if(!pluginHandle) {
 				Janus.debug("This handle is not attached to this session");
 				return;
@@ -749,7 +749,7 @@ function Janus(gatewayCallbacks) {
 				Janus.warn("Missing sender...");
 				return;
 			}
-			const pluginHandle = pluginHandles[sender];
+			const pluginHandle = pluginHandles.get(sender);
 			if(!pluginHandle) {
 				Janus.debug("This handle is not attached to this session");
 				return;
@@ -761,11 +761,11 @@ function Janus(gatewayCallbacks) {
 			Janus.debug(json);
 			var transaction = json["transaction"];
 			if(transaction) {
-				var reportSuccess = transactions[transaction];
+				var reportSuccess = transactions.get(transaction);
 				if(reportSuccess) {
 					reportSuccess(json);
 				}
-				delete transactions[transaction];
+				transactions.delete(transaction);
 			}
 			return;
 		} else if(json["janus"] === "event") {
@@ -784,7 +784,7 @@ function Janus(gatewayCallbacks) {
 			Janus.debug("  -- Event is coming from " + sender + " (" + plugindata["plugin"] + ")");
 			var data = plugindata["data"];
 			Janus.debug(data);
-			const pluginHandle = pluginHandles[sender];
+			const pluginHandle = pluginHandles.get(sender);
 			if(!pluginHandle) {
 				Janus.warn("This handle is not attached to this session");
 				return;
@@ -888,7 +888,7 @@ function Janus(gatewayCallbacks) {
 
 				'open': function() {
 					// We need to be notified about the success
-					transactions[transaction] = function(json) {
+					transactions.set(transaction, function(json) {
 						Janus.debug(json);
 						if (json["janus"] !== "success") {
 							Janus.error("Ooops: " + json["error"].code + " " + json["error"].reason);	// FIXME
@@ -905,7 +905,7 @@ function Janus(gatewayCallbacks) {
 						}
 						Janus.sessions[sessionId] = that;
 						callbacks.success();
-					};
+					});
 					ws.send(JSON.stringify(request));
 				},
 
@@ -993,14 +993,14 @@ function Janus(gatewayCallbacks) {
 		if(apisecret)
 			request["apisecret"] = apisecret;
 		if(websockets) {
-			transactions[transaction] = function(json) {
+			transactions.set(transaction, function(json) {
 				Janus.log("Server info:");
 				Janus.debug(json);
 				if(json["janus"] !== "server_info") {
 					Janus.error("Ooops: " + json["error"].code + " " + json["error"].reason);	// FIXME
 				}
 				callbacks.success(json);
-			}
+			});
 			ws.send(JSON.stringify(request));
 			return;
 		}
@@ -1046,7 +1046,7 @@ function Janus(gatewayCallbacks) {
 			return;
 		}
 		if(cleanupHandles) {
-			for(var handleId in pluginHandles)
+			for(var handleId of pluginHandles.keys())
 				destroyHandle(handleId, { noRequest: true });
 		}
 		if(!connected) {
@@ -1188,7 +1188,7 @@ function Janus(gatewayCallbacks) {
 		if(apisecret)
 			request["apisecret"] = apisecret;
 		if(websockets) {
-			transactions[transaction] = function(json) {
+			transactions.set(transaction, function(json) {
 				Janus.debug(json);
 				if(json["janus"] !== "success") {
 					Janus.error("Ooops: " + json["error"].code + " " + json["error"].reason);	// FIXME
@@ -1263,9 +1263,9 @@ function Janus(gatewayCallbacks) {
 						hangup : function(sendRequest) { cleanupWebrtc(handleId, sendRequest === true); },
 						detach : function(callbacks) { destroyHandle(handleId, callbacks); }
 					};
-				pluginHandles[handleId] = pluginHandle;
+				pluginHandles.set(handleId, pluginHandle);
 				callbacks.success(pluginHandle);
-			};
+			});
 			request["session_id"] = sessionId;
 			ws.send(JSON.stringify(request));
 			return;
@@ -1349,7 +1349,7 @@ function Janus(gatewayCallbacks) {
 						hangup : function(sendRequest) { cleanupWebrtc(handleId, sendRequest === true); },
 						detach : function(callbacks) { destroyHandle(handleId, callbacks); }
 					}
-				pluginHandles[handleId] = pluginHandle;
+				pluginHandles.set(handleId, pluginHandle);
 				callbacks.success(pluginHandle);
 			},
 			error: function(textStatus, errorThrown) {
@@ -1372,7 +1372,7 @@ function Janus(gatewayCallbacks) {
 			callbacks.error("Is the server down? (connected=false)");
 			return;
 		}
-		var pluginHandle = pluginHandles[handleId];
+		var pluginHandle = pluginHandles.get(handleId);
 		if(!pluginHandle || !pluginHandle.webrtcStuff) {
 			Janus.warn("Invalid handle");
 			callbacks.error("Invalid handle");
@@ -1403,7 +1403,7 @@ function Janus(gatewayCallbacks) {
 		if(websockets) {
 			request["session_id"] = sessionId;
 			request["handle_id"] = handleId;
-			transactions[transaction] = function(json) {
+			transactions.set(transaction, function(json) {
 				Janus.debug("Message sent!");
 				Janus.debug(json);
 				if(json["janus"] === "success") {
@@ -1432,7 +1432,7 @@ function Janus(gatewayCallbacks) {
 				}
 				// If we got here, the plugin decided to handle the request asynchronously
 				callbacks.success();
-			};
+			});
 			ws.send(JSON.stringify(request));
 			return;
 		}
@@ -1483,7 +1483,7 @@ function Janus(gatewayCallbacks) {
 			Janus.warn("Is the server down? (connected=false)");
 			return;
 		}
-		var pluginHandle = pluginHandles[handleId];
+		var pluginHandle = pluginHandles.get(handleId);
 		if(!pluginHandle || !pluginHandle.webrtcStuff) {
 			Janus.warn("Invalid handle");
 			return;
@@ -1521,7 +1521,7 @@ function Janus(gatewayCallbacks) {
 
 	// Private method to create a data channel
 	function createDataChannel(handleId, dclabel, dcprotocol, incoming, pendingData) {
-		var pluginHandle = pluginHandles[handleId];
+		var pluginHandle = pluginHandles.get(handleId);
 		if(!pluginHandle || !pluginHandle.webrtcStuff) {
 			Janus.warn("Invalid handle");
 			return;
@@ -1585,7 +1585,7 @@ function Janus(gatewayCallbacks) {
 		callbacks = callbacks || {};
 		callbacks.success = (typeof callbacks.success == "function") ? callbacks.success : Janus.noop;
 		callbacks.error = (typeof callbacks.error == "function") ? callbacks.error : Janus.noop;
-		var pluginHandle = pluginHandles[handleId];
+		var pluginHandle = pluginHandles.get(handleId);
 		if(!pluginHandle || !pluginHandle.webrtcStuff) {
 			Janus.warn("Invalid handle");
 			callbacks.error("Invalid handle");
@@ -1621,7 +1621,7 @@ function Janus(gatewayCallbacks) {
 		callbacks = callbacks || {};
 		callbacks.success = (typeof callbacks.success == "function") ? callbacks.success : Janus.noop;
 		callbacks.error = (typeof callbacks.error == "function") ? callbacks.error : Janus.noop;
-		var pluginHandle = pluginHandles[handleId];
+		var pluginHandle = pluginHandles.get(handleId);
 		if(!pluginHandle || !pluginHandle.webrtcStuff) {
 			Janus.warn("Invalid handle");
 			callbacks.error("Invalid handle");
@@ -1679,17 +1679,17 @@ function Janus(gatewayCallbacks) {
 		var noRequest = (callbacks.noRequest === true);
 		Janus.log("Destroying handle " + handleId + " (only-locally=" + noRequest + ")");
 		cleanupWebrtc(handleId);
-		var pluginHandle = pluginHandles[handleId];
+		var pluginHandle = pluginHandles.get(handleId);
 		if(!pluginHandle || pluginHandle.detached) {
 			// Plugin was already detached by Janus, calling detach again will return a handle not found error, so just exit here
-			delete pluginHandles[handleId];
+			pluginHandles.delete(handleId);
 			callbacks.success();
 			return;
 		}
 		pluginHandle.detached = true;
 		if(noRequest) {
 			// We're only removing the handle locally
-			delete pluginHandles[handleId];
+			pluginHandles.delete(handleId);
 			callbacks.success();
 			return;
 		}
@@ -1707,7 +1707,7 @@ function Janus(gatewayCallbacks) {
 			request["session_id"] = sessionId;
 			request["handle_id"] = handleId;
 			ws.send(JSON.stringify(request));
-			delete pluginHandles[handleId];
+			pluginHandles.delete(handleId);
 			callbacks.success();
 			return;
 		}
@@ -1721,13 +1721,13 @@ function Janus(gatewayCallbacks) {
 				if(json["janus"] !== "success") {
 					Janus.error("Ooops: " + json["error"].code + " " + json["error"].reason);	// FIXME
 				}
-				delete pluginHandles[handleId];
+				pluginHandles.delete(handleId);
 				callbacks.success();
 			},
 			error: function(textStatus, errorThrown) {
 				Janus.error(textStatus + ":", errorThrown);	// FIXME
 				// We cleanup anyway
-				delete pluginHandles[handleId];
+				pluginHandles.delete(handleId);
 				callbacks.success();
 			}
 		});
@@ -1735,7 +1735,7 @@ function Janus(gatewayCallbacks) {
 
 	// WebRTC stuff
 	function streamsDone(handleId, jsep, media, callbacks, stream) {
-		var pluginHandle = pluginHandles[handleId];
+		var pluginHandle = pluginHandles.get(handleId);
 		if(!pluginHandle || !pluginHandle.webrtcStuff) {
 			Janus.warn("Invalid handle");
 			// Close all tracks if the given stream has been created internally
@@ -2070,7 +2070,7 @@ function Janus(gatewayCallbacks) {
 		/* Check that callbacks.media is a (not null) Object */
 		callbacks.media = (typeof callbacks.media === 'object' && callbacks.media) ? callbacks.media : { audio: true, video: true };
 		var media = callbacks.media;
-		var pluginHandle = pluginHandles[handleId];
+		var pluginHandle = pluginHandles.get(handleId);
 		if(!pluginHandle || !pluginHandle.webrtcStuff) {
 			Janus.warn("Invalid handle");
 			callbacks.error("Invalid handle");
@@ -2570,7 +2570,7 @@ function Janus(gatewayCallbacks) {
 		callbacks.error = (typeof callbacks.error == "function") ? callbacks.error : webrtcError;
 		callbacks.customizeSdp = (typeof callbacks.customizeSdp == "function") ? callbacks.customizeSdp : Janus.noop;
 		var jsep = callbacks.jsep;
-		var pluginHandle = pluginHandles[handleId];
+		var pluginHandle = pluginHandles.get(handleId);
 		if(!pluginHandle || !pluginHandle.webrtcStuff) {
 			Janus.warn("Invalid handle");
 			callbacks.error("Invalid handle");
@@ -2616,7 +2616,7 @@ function Janus(gatewayCallbacks) {
 		callbacks.success = (typeof callbacks.success == "function") ? callbacks.success : Janus.noop;
 		callbacks.error = (typeof callbacks.error == "function") ? callbacks.error : Janus.noop;
 		callbacks.customizeSdp = (typeof callbacks.customizeSdp == "function") ? callbacks.customizeSdp : Janus.noop;
-		var pluginHandle = pluginHandles[handleId];
+		var pluginHandle = pluginHandles.get(handleId);
 		if(!pluginHandle || !pluginHandle.webrtcStuff) {
 			Janus.warn("Invalid handle");
 			callbacks.error("Invalid handle");
@@ -2825,7 +2825,7 @@ function Janus(gatewayCallbacks) {
 		callbacks.success = (typeof callbacks.success == "function") ? callbacks.success : Janus.noop;
 		callbacks.error = (typeof callbacks.error == "function") ? callbacks.error : Janus.noop;
 		callbacks.customizeSdp = (typeof callbacks.customizeSdp == "function") ? callbacks.customizeSdp : Janus.noop;
-		var pluginHandle = pluginHandles[handleId];
+		var pluginHandle = pluginHandles.get(handleId);
 		if(!pluginHandle || !pluginHandle.webrtcStuff) {
 			Janus.warn("Invalid handle");
 			callbacks.error("Invalid handle");
@@ -3068,7 +3068,7 @@ function Janus(gatewayCallbacks) {
 		callbacks = callbacks || {};
 		callbacks.success = (typeof callbacks.success == "function") ? callbacks.success : Janus.noop;
 		callbacks.error = (typeof callbacks.error == "function") ? callbacks.error : Janus.noop;
-		var pluginHandle = pluginHandles[handleId];
+		var pluginHandle = pluginHandles.get(handleId);
 		if(!pluginHandle || !pluginHandle.webrtcStuff) {
 			Janus.warn("Invalid handle, not sending anything");
 			return;
@@ -3091,7 +3091,7 @@ function Janus(gatewayCallbacks) {
 	}
 
 	function getVolume(handleId, remote) {
-		var pluginHandle = pluginHandles[handleId];
+		var pluginHandle = pluginHandles.get(handleId);
 		if(!pluginHandle || !pluginHandle.webrtcStuff) {
 			Janus.warn("Invalid handle");
 			return 0;
@@ -3137,7 +3137,7 @@ function Janus(gatewayCallbacks) {
 	}
 
 	function isMuted(handleId, video) {
-		var pluginHandle = pluginHandles[handleId];
+		var pluginHandle = pluginHandles.get(handleId);
 		if(!pluginHandle || !pluginHandle.webrtcStuff) {
 			Janus.warn("Invalid handle");
 			return true;
@@ -3169,7 +3169,7 @@ function Janus(gatewayCallbacks) {
 	}
 
 	function mute(handleId, video, mute) {
-		var pluginHandle = pluginHandles[handleId];
+		var pluginHandle = pluginHandles.get(handleId);
 		if(!pluginHandle || !pluginHandle.webrtcStuff) {
 			Janus.warn("Invalid handle");
 			return false;
@@ -3203,7 +3203,7 @@ function Janus(gatewayCallbacks) {
 	}
 
 	function getBitrate(handleId) {
-		var pluginHandle = pluginHandles[handleId];
+		var pluginHandle = pluginHandles.get(handleId);
 		if(!pluginHandle || !pluginHandle.webrtcStuff) {
 			Janus.warn("Invalid handle");
 			return "Invalid handle";
@@ -3272,7 +3272,7 @@ function Janus(gatewayCallbacks) {
 
 	function cleanupWebrtc(handleId, hangupRequest) {
 		Janus.log("Cleaning WebRTC stuff");
-		var pluginHandle = pluginHandles[handleId];
+		var pluginHandle = pluginHandles.get(handleId);
 		if(!pluginHandle) {
 			// Nothing to clean
 			return;
