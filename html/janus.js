@@ -96,7 +96,7 @@ Janus.useDefaultDependencies = function (deps) {
 	return {
 		newWebSocket: function(server, proto) { return new socketCls(server, proto); },
 		extension: (deps && deps.extension) || defaultExtension,
-		isArray: function(arr) { return Array.isArray(arr); },
+		isArray: Array.isArray,
 		webRTCAdapter: (deps && deps.adapter) || adapter,
 		httpAPICall: function(url, options) {
 			var fetchOptions = {
@@ -232,9 +232,6 @@ Janus.init = function(options) {
 		// Already initialized
 		options.callback();
 	} else {
-		if(typeof console.log == "undefined") {
-			console.log = function() {};
-		}
 		// Console logging (all debugging disabled by default)
 		Janus.trace = Janus.noop;
 		Janus.debug = Janus.noop;
@@ -461,7 +458,7 @@ function Janus(gatewayCallbacks) {
 	var servers = null;
 	var serversIndex = 0;
 	var server = gatewayCallbacks.server;
-	if(Janus.isArray(server)) {
+	if(Array.isArray(server)) {
 		Janus.log("Multiple servers provided (" + server.length + "), will use the first that works");
 		server = null;
 		servers = gatewayCallbacks.server;
@@ -596,7 +593,7 @@ function Janus(gatewayCallbacks) {
 		retries = 0;
 		if(!websockets && sessionId !== undefined && sessionId !== null && skipTimeout !== true)
 			eventHandler();
-		if(!websockets && Janus.isArray(json)) {
+		if(!websockets && Array.isArray(json)) {
 			// We got an array: it means we passed a maxev > 1, iterate on all objects
 			for(var i=0; i<json.length; i++) {
 				handleEvent(json[i], true);
@@ -853,7 +850,7 @@ function Janus(gatewayCallbacks) {
 			request["token"] = token;
 		if(apisecret)
 			request["apisecret"] = apisecret;
-		if(!server && Janus.isArray(servers)) {
+		if(!server && Array.isArray(servers)) {
 			// We still need to find a working server from the list we were given
 			server = servers[serversIndex];
 			if(server.indexOf("ws") === 0) {
@@ -869,7 +866,7 @@ function Janus(gatewayCallbacks) {
 			wsHandlers = {
 				'error': function() {
 					Janus.error("Error connecting to the Janus WebSockets server... " + server);
-					if (Janus.isArray(servers) && !callbacks["reconnect"]) {
+					if (Array.isArray(servers) && !callbacks["reconnect"]) {
 						serversIndex++;
 						if (serversIndex === servers.length) {
 							// We tried all the servers the user gave us and they all failed
@@ -953,7 +950,7 @@ function Janus(gatewayCallbacks) {
 			},
 			error: function(textStatus, errorThrown) {
 				Janus.error(textStatus + ":", errorThrown);	// FIXME
-				if(Janus.isArray(servers) && !callbacks["reconnect"]) {
+				if(Array.isArray(servers) && !callbacks["reconnect"]) {
 					serversIndex++;
 					if(serversIndex === servers.length) {
 						// We tried all the servers the user gave us and they all failed
