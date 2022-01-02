@@ -479,34 +479,34 @@ function Janus(gatewayCallbacks) {
 	var ipv6Support = (gatewayCallbacks.ipv6 === true);
 	// Whether we should enable the withCredentials flag for XHR requests
 	var withCredentials = false;
-	if(gatewayCallbacks.withCredentials !== undefined && gatewayCallbacks.withCredentials !== null)
+	if(gatewayCallbacks.withCredentials != null)
 		withCredentials = gatewayCallbacks.withCredentials === true;
 	// Optional max events
 	var maxev = 10;
-	if(gatewayCallbacks.max_poll_events !== undefined && gatewayCallbacks.max_poll_events !== null)
+	if(gatewayCallbacks.max_poll_events != null)
 		maxev = gatewayCallbacks.max_poll_events;
 	if(maxev < 1)
 		maxev = 1;
 	// Token to use (only if the token based authentication mechanism is enabled)
 	var token = null;
-	if(gatewayCallbacks.token !== undefined && gatewayCallbacks.token !== null)
+	if(gatewayCallbacks.token != null)
 		token = gatewayCallbacks.token;
 	// API secret to use (only if the shared API secret is enabled)
 	var apisecret = null;
-	if(gatewayCallbacks.apisecret !== undefined && gatewayCallbacks.apisecret !== null)
+	if(gatewayCallbacks.apisecret != null)
 		apisecret = gatewayCallbacks.apisecret;
 	// Whether we should destroy this session when onbeforeunload is called
 	this.destroyOnUnload = true;
-	if(gatewayCallbacks.destroyOnUnload !== undefined && gatewayCallbacks.destroyOnUnload !== null)
+	if(gatewayCallbacks.destroyOnUnload != null)
 		this.destroyOnUnload = (gatewayCallbacks.destroyOnUnload === true);
 	// Some timeout-related values
 	var keepAlivePeriod = 25000;
-	if(gatewayCallbacks.keepAlivePeriod !== undefined && gatewayCallbacks.keepAlivePeriod !== null)
+	if(gatewayCallbacks.keepAlivePeriod != null)
 		keepAlivePeriod = gatewayCallbacks.keepAlivePeriod;
 	if(isNaN(keepAlivePeriod))
 		keepAlivePeriod = 25000;
 	var longPollTimeout = 60000;
-	if(gatewayCallbacks.longPollTimeout !== undefined && gatewayCallbacks.longPollTimeout !== null)
+	if(gatewayCallbacks.longPollTimeout != null)
 		longPollTimeout = gatewayCallbacks.longPollTimeout;
 	if(isNaN(longPollTimeout))
 		longPollTimeout = 60000;
@@ -519,7 +519,7 @@ function Janus(gatewayCallbacks) {
 			low: 100000,
 		};
 
-		if (simulcastMaxBitrates !== undefined && simulcastMaxBitrates !== null) {
+		if (simulcastMaxBitrates != null) {
 			if (simulcastMaxBitrates.high)
 				maxBitrates.high = simulcastMaxBitrates.high;
 			if (simulcastMaxBitrates.medium)
@@ -562,7 +562,7 @@ function Janus(gatewayCallbacks) {
 			Janus.warn("Is the server down? (connected=false)");
 			return;
 		}
-		var longpoll = server + "/" + sessionId + "?rid=" + new Date().getTime();
+		var longpoll = server + "/" + sessionId + "?rid=" + Date.now();
 		if(maxev)
 			longpoll = longpoll + "&maxev=" + maxev;
 		if(token)
@@ -591,7 +591,7 @@ function Janus(gatewayCallbacks) {
 	// Private event handler: this will trigger plugin callbacks, if set
 	function handleEvent(json, skipTimeout) {
 		retries = 0;
-		if(!websockets && sessionId !== undefined && sessionId !== null && skipTimeout !== true)
+		if(!websockets && sessionId != null && skipTimeout !== true)
 			eventHandler();
 		if(!websockets && Array.isArray(json)) {
 			// We got an array: it means we passed a maxev > 1, iterate on all objects
@@ -1031,7 +1031,7 @@ function Janus(gatewayCallbacks) {
 		callbacks.error = (typeof callbacks.error == "function") ? callbacks.error : Janus.noop;
 		var unload = (callbacks.unload === true);
 		var notifyDestroyed = true;
-		if(callbacks.notifyDestroyed !== undefined && callbacks.notifyDestroyed !== null)
+		if(callbacks.notifyDestroyed != null)
 			notifyDestroyed = (callbacks.notifyDestroyed === true);
 		var cleanupHandles = (callbacks.cleanupHandles === true);
 		Janus.log("Destroying session " + sessionId + " (unload=" + unload + ")");
@@ -3552,7 +3552,7 @@ function Janus(gatewayCallbacks) {
 			return true;	// Default
 		if(media.audio === false)
 			return false;	// Generic audio has precedence
-		if(media.audioSend === undefined || media.audioSend === null)
+		if(media.audioSend == null)
 			return true;	// Default
 		return (media.audioSend === true);
 	}
@@ -3563,7 +3563,7 @@ function Janus(gatewayCallbacks) {
 			return false;	// Default
 		if(media.audio === false || media.audioSend === false)
 			return false;	// If we're not asking to capture audio, it's not required
-		if(media.failIfNoAudio === undefined || media.failIfNoAudio === null)
+		if(media.failIfNoAudio == null)
 			return false;	// Default
 		return (media.failIfNoAudio === true);
 	}
@@ -3574,7 +3574,7 @@ function Janus(gatewayCallbacks) {
 			return true;	// Default
 		if(media.audio === false)
 			return false;	// Generic audio has precedence
-		if(media.audioRecv === undefined || media.audioRecv === null)
+		if(media.audioRecv == null)
 			return true;	// Default
 		return (media.audioRecv === true);
 	}
@@ -3585,7 +3585,7 @@ function Janus(gatewayCallbacks) {
 			return true;	// Default
 		if(media.video === false)
 			return false;	// Generic video has precedence
-		if(media.videoSend === undefined || media.videoSend === null)
+		if(media.videoSend == null)
 			return true;	// Default
 		return (media.videoSend === true);
 	}
@@ -3596,7 +3596,7 @@ function Janus(gatewayCallbacks) {
 			return false;	// Default
 		if(media.video === false || media.videoSend === false)
 			return false;	// If we're not asking to capture video, it's not required
-		if(media.failIfNoVideo === undefined || media.failIfNoVideo === null)
+		if(media.failIfNoVideo == null)
 			return false;	// Default
 		return (media.failIfNoVideo === true);
 	}
@@ -3607,7 +3607,7 @@ function Janus(gatewayCallbacks) {
 			return true;	// Default
 		if(media.video === false)
 			return false;	// Generic video has precedence
-		if(media.videoRecv === undefined || media.videoRecv === null)
+		if(media.videoRecv == null)
 			return true;	// Default
 		return (media.videoRecv === true);
 	}
@@ -3634,7 +3634,7 @@ function Janus(gatewayCallbacks) {
 			Janus.warn("Edge doesn't support data channels yet");
 			return false;
 		}
-		if(media === undefined || media === null)
+		if(media == null)
 			return false;	// Default
 		return (media.data === true);
 	}
